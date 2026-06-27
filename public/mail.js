@@ -301,6 +301,42 @@
     reader.readAsText(fileInput.files[0])
   }
 
+   const pasteImportEmails = () => {
+    const delimiter = $('#paste-delimiter').value.trim()
+    const content = $('#paste-content').value.trim()
+
+    if (!delimiter) {
+      showToast('请输入分隔符')
+      return
+    }
+    if (!content) {
+      showToast('请粘贴要导入的账号内容')
+      return
+    }
+
+    const lines = content.split('\n')
+    let data = getEmailData()
+    let count = 0
+
+    lines.forEach(line => {
+      const fields = line.split(delimiter)
+      if (fields.length >= 4) {
+        const [email, password, clientId, refreshToken] = fields.map(s => s.trim())
+        if (email && password && clientId && refreshToken) {
+          data.push({ email, password, clientId, refreshToken })
+          count++
+        }
+      }
+    })
+
+    setEmailData(data)
+    state.emailData = data
+    closeModal('paste-import-modal')
+    $('#paste-content').value = '' // 成功后清空输入框
+    render()
+    showToast(`粘贴导入成功，共 ${count} 条`)
+  }
+
   /* ---------- 邮件列表 ---------- */
   const loadMailList = (refreshToken, clientId, email, mailbox) => {
     showLoading()
@@ -678,6 +714,9 @@ ${item.text || item.html || '(无内容)'}
         case 'import':
           openModal('import-modal')
           break
+        case 'paste-import':
+          openModal('paste-import-modal')
+          break
         case 'refresh-token':
           batchRefreshTokens()
           break
@@ -796,6 +835,9 @@ ${item.text || item.html || '(无内容)'}
 
     // 导入弹窗按钮
     $('#import-confirm').addEventListener('click', importEmails)
+
+    // 粘贴导入弹窗按钮
+    $('#paste-import-confirm').addEventListener('click', pasteImportEmails)
 
     // 关闭模态框
     $$('.modal-overlay').forEach(overlay => {
